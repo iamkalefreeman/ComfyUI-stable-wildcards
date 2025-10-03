@@ -20,6 +20,7 @@ from random import Random
 import re
 import server
 from aiohttp import web
+from typing import Dict, Any, List, Tuple
 
 
 @server.PromptServer.instance.routes.post("/stable-wildcards/process")
@@ -73,9 +74,18 @@ class StableWildcard:
         To achieve stable results a new random object is created
         using the given seed.
         """
+        if prompt is None:
+            raise TypeError("prompt cannot be None")
+        if not isinstance(prompt, str):
+            raise TypeError(f"prompt must be a string, but got {type(prompt).__name__}")
+        if seed is None:
+            raise TypeError("seed cannot be None")
+        if not isinstance(seed, int):
+            raise TypeError(f"seed must be an integer, but got {type(seed).__name__}")
+
         # Setup RNG
         rng = Random(int(seed))
-
+        
         # Search & replace matches
         match = StableWildcard.WILDCARD_PATTERN.search(prompt)
         while match:
@@ -84,53 +94,68 @@ class StableWildcard:
             # ops is guaranteed to have at least one option
             ops = match.group()[1:-1].split('|')
 
+            if not ops:
+                continue
+            
             # Pick a random option.
             pick = ops[rng.randint(0, len(ops) - 1)]
-
+            
             # Replace the match and update the string
             # Limit one match incase there are repeated wildcards
             prompt = prompt.replace(match.group(), pick, 1)
 
             # Search for more wildcards
             match = StableWildcard.WILDCARD_PATTERN.search(prompt)
-
         return prompt
 
     def execute(self, prompt, seed, **kwargs):
         """
         Process the wildcards for execution
         """
+        if prompt is None:
+            raise TypeError("prompt cannot be None")
+        if not isinstance(prompt, str):
+            raise TypeError(f"prompt must be a string, but got {type(prompt).__name__}")
+        if seed is None:
+            raise TypeError("seed cannot be None")
+        if not isinstance(seed, int):
+            raise TypeError(f"seed must be an integer, but got {type(seed).__name__}")
 
         # Process the wildcards
         prompt = self.process_wildcards(prompt, seed)
 
         # Output result console
-        print('\033[96m Stable Wildcard: ({}) "{}"\033[0m'.format(seed, prompt))
+        print(f'\033[96m Stable Wildcard: ({seed}) "{prompt}"\033[0m')
+
+        unique_id = kwargs.get('id')
+        png_info = kwargs.get('png_info')
 
         # Save output into metadata if everything exists
-        if 'id' in kwargs and 'png_info' in kwargs:
-            id = kwargs['id']
-            png_info = kwargs['png_info']
-
+        if unique_id is not None and png_info is not None and isinstance(png_info, dict):
             # Check for workflow and extra
-            if 'workflow' in png_info:
-                workflow = png_info['workflow']
-
+            workflow = png_info.get('workflow')
+            if workflow is not None and isinstance(workflow, dict):
                 # Create extra if missing
                 if 'extra' not in workflow:
                     workflow['extra'] = {}
-
-                # Create a namespace if necessary
-                if 'stable-wildcards' not in workflow['extra']:
-                    workflow['extra']['stable-wildcards'] = {}
-
-                # Save the result in metadata by id
-                workflow['extra']['stable-wildcards'][id] = prompt
-
+                
+                if isinstance(workflow.get('extra'), dict):
+                    extra_data = workflow['extra']
+                    # Create a namespace if necessary
+                    if 'stable-wildcards' not in extra_data:
+                        extra_data['stable-wildcards'] = {}
+                    
+                    # Save the result in metadata by id
+                    if isinstance(extra_data.get('stable-wildcards'), dict):
+                        extra_data['stable-wildcards'][unique_id] = prompt
+                    else:
+                        print('\033[93m Stable Wildcard: "stable-wildcards" in extra is not a dictionary, cannot save metadata.\033[0m')
+                else:
+                    print('\033[93m Stable Wildcard: "extra" in workflow is not a dictionary, cannot save metadata.\033[0m')
             else:
-                print('\033[96m Stable Wildcard: Workflow missing, output not saved in metadata\033[0m')
-
+                print('\033[96m Stable Wildcard: Workflow missing or not a dictionary, output not saved in metadata\033[0m')
         else:
-            print('\033[96m Stable Wildcard: Hidden input missing, output not saved in metadata\033[0m')
+            print('\033[96m Stable Wildcard: Hidden input missing or invalid, output not saved in metadata\033[0m')
 
-        return prompt,
+        return (prompt,)
+
