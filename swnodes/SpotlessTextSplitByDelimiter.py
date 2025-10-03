@@ -37,7 +37,7 @@ class SpotlessTextSplitByDelimiter:
     # OUTPUT_NODE = True
     OUTPUT_IS_LIST = (True,)
 
-    CATEGORY = "SpotlessMind/Text"
+    CATEGORY = "Spotless/Text"
 
     def run(self, text,delimiter,start_index,skip_every,max_count):
          
