@@ -20,6 +20,7 @@
 
 from .swnodes.StableWildcard import StableWildcard
 from .swnodes.NonDynamicString import NondynamicString
+from .swnodes.SpotlessTextSplitByDelimiter import SpotlessTextSplitByDelimiter
 
 # Nodes passed to ComfyUI.
 # Node names must be unique
@@ -33,6 +34,11 @@ NODE_MAP = [
         "name" : "NonDynamic String",
         "class": NondynamicString,
         "disp" : "NonDynamic String"
+    },
+    {
+        "name" : "SpotlessTextSplitByDelimiter",
+        "class": SpotlessTextSplitByDelimiter,
+        "disp" : "SpotlessTextSplitByDelimiter"
     }
 ]
 
